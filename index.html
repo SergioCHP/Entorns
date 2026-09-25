@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian M-9 · Calculadora de escritorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ BASE ============ */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;min-height:100vh;overflow-x:hidden;
+  font-family:'Work Sans',system-ui,sans-serif;
+  color:#cfd6d8;
+  background:
+    radial-gradient(1100px 640px at 15% -8%, rgba(224,122,63,.16), transparent 62%),
+    radial-gradient(900px 620px at 95% 22%, rgba(79,184,165,.11), transparent 66%),
+    linear-gradient(180deg,#121a1c 0%,#0b1113 55%,#070b0c 100%);
+  background-attachment:fixed;
+}
+/* rejilla del escritorio */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:46px 46px;
+  mask-image:radial-gradient(900px 700px at 40% 30%,#000,transparent 85%);
+}
+/* halo de lámpara en movimiento */
+.lamp{
+  position:fixed;z-index:0;width:60vw;height:60vw;left:-10vw;top:-25vw;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,196,120,.13),transparent 62%);
+  filter:blur(10px);animation:drift 22s ease-in-out infinite alternate;
+}
+@keyframes drift{to{transform:translate(22vw,14vh) scale(1.15);opacity:.65}}
+/* grano */
+.grain{
+  position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.055;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ BARRA SUPERIOR ============ */
+.topbar{
+  position:relative;z-index:5;display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;
+  padding:18px clamp(16px,4vw,46px);border-bottom:1px solid rgba(255,255,255,.07);
+  background:linear-gradient(180deg,rgba(255,255,255,.045),transparent);
+  backdrop-filter:blur(4px);
+}
+.brand{display:flex;align-items:center;gap:14px}
+.mark{
+  width:40px;height:40px;border-radius:11px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(150deg,#e07a3f,#a8452a);color:#1a0f09;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:20px;
+  box-shadow:0 6px 18px rgba(224,122,63,.35),inset 0 1px 0 rgba(255,255,255,.4);
+}
+.brand h1{margin:0;font-family:'Syne',sans-serif;font-weight:800;font-size:19px;letter-spacing:.16em;color:#f2f5f5}
+.brand p{margin:1px 0 0;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#7d888c}
+.switches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{
+  font:500 10.5px/1 'Work Sans',sans-serif;letter-spacing:.16em;text-transform:uppercase;
+  color:#9aa5a9;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);
+  padding:9px 13px;border-radius:999px;cursor:pointer;display:flex;gap:8px;align-items:center;
+  transition:.25s ease;
+}
+.sw:hover{color:#fff;border-color:rgba(224,122,63,.6);background:rgba(224,122,63,.12)}
+.sw i{font-style:normal;color:#4fb8a5;font-weight:600}
+.sw[aria-pressed="false"] i{color:#5c6669}
+
+/* ============ ESCENARIO ============ */
+.stage{
+  position:relative;z-index:4;display:flex;gap:clamp(22px,4vw,54px);align-items:flex-start;justify-content:center;
+  padding:clamp(26px,5vw,64px) clamp(16px,4vw,40px) 40px;flex-wrap:wrap;
+}
+
+/* ---------- DISPOSITIVO ---------- */
+.device{
+  position:relative;width:min(430px,94vw);border-radius:26px 26px 30px 30px;padding:20px 20px 16px;
+  background:
+    linear-gradient(180deg,#39434a 0%,#2a3236 14%,#232b2f 60%,#1a2124 100%);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.14) inset,
+    0 -3px 0 rgba(0,0,0,.5) inset,
+    0 34px 60px -22px rgba(0,0,0,.85),
+    0 4px 14px rgba(0,0,0,.6);
+  transform:perspective(1300px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+  transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s;
+}
+.device::after{ /* brillo especular */
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.09) 45%,transparent 58%);
+  background-size:250% 250%;background-position:var(--sx,0%) 0;opacity:.9;
+}
+.chassis-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.plate .model{display:block;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;letter-spacing:.3em;color:#e8ecec}
+.plate .sub{display:block;margin-top:3px;font-size:9px;letter-spacing:.26em;color:#78858a;text-transform:uppercase}
+.solar{display:flex;gap:3px;padding:5px 6px;border-radius:6px;background:#12181a;box-shadow:inset 0 2px 5px rgba(0,0,0,.75)}
+.solar span{width:16px;height:22px;border-radius:2px;background:linear-gradient(160deg,#2f3f4d,#182531 60%,#243541);position:relative;overflow:hidden}
+.solar span::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(160,210,255,.5) 50%,transparent 60%);transform:translateX(-120%);animation:sheen 6s linear infinite}
+.solar span:nth-child(2)::after{animation-delay:.3s}.solar span:nth-child(3)::after{animation-delay:.6s}.solar span:nth-child(4)::after{animation-delay:.9s}
+@keyframes sheen{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+
+/* ---------- PANTALLA LCD ---------- */
+.screen{
+  border-radius:12px;padding:14px 16px 12px;position:relative;
+  background:linear-gradient(170deg,var(--lcd-bg),color-mix(in srgb,var(--lcd-bg) 70%,#000));
+  box-shadow:inset 0 4px 14px rgba(0,0,0,.75),inset 0 0 0 1px rgba(255,255,255,.06),0 1px 0 rgba(255,255,255,.08);
+  transition:background .4s,box-shadow .3s;
+}
+.screen::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);opacity:.5}
+.status{display:flex;gap:12px;align-items:center;font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;color:var(--lcd-dim-strong,rgba(240,180,41,.32));margin-bottom:6px}
+body[data-lcd="green"] .status{color:rgba(125,255,178,.32)}
+.ind{transition:.2s;text-transform:uppercase}
+.ind.on{color:var(--lcd-fg);text-shadow:0 0 9px var(--lcd-fg)}
+.expr{font:500 13px/1 'IBM Plex Mono',monospace;color:var(--lcd-fg);opacity:.5;min-height:14px;text-align:right;letter-spacing:.06em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.readout{position:relative;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(34px,9.4vw,50px);line-height:1.16;letter-spacing:.02em;color:var(--lcd-fg);text-shadow:0 0 12px color-mix(in srgb,var(--lcd-fg) 45%,transparent)}
+.ghost{position:absolute;inset:0;text-align:right;color:var(--lcd-fg);opacity:.075;pointer-events:none}
+.readout.pop{animation:pop .3s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.93);opacity:.5}100%{transform:scale(1);opacity:1}}
+.readout.err{color:#ff6b6b;text-shadow:0 0 14px rgba(255,80,80,.6);animation:shake .32s}
+@keyframes shake{25%{transform:translateX(-7px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+body[data-lcd="green"]{--lcd-fg:#7dffb2;--lcd-bg:#0f2019}
+body[data-lcd="amber"]{--lcd-fg:#f5b531;--lcd-bg:#21291f}
+
+/* ---------- TIRA DE MEMORIA ---------- */
+.mem-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:13px 0 10px}
+.mem-strip button{
+  font:600 10px/1 'Work Sans',sans-serif;letter-spacing:.14em;padding:8px 0;border-radius:7px;cursor:pointer;
+  color:#8fa0a4;background:linear-gradient(180deg,#2f383d,#232b2f);border:1px solid rgba(255,255,255,.06);
+  box-shadow:0 2px 0 #14191b;transition:.14s;
+}
+.mem-strip button:hover{color:var(--acc-2);border-color:rgba(79,184,165,.45)}
+.mem-strip button:active{transform:translateY(2px);box-shadow:none}
+
+/* ---------- CAJÓN CIENTÍFICO ---------- */
+.fx{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;max-height:0;opacity:0;overflow:hidden;transition:max-height .45s cubic-bezier(.2,.9,.2,1),opacity .3s,margin .45s}
+.fx.open{max-height:180px;opacity:1;margin-bottom:10px}
+.fx button{
+  font:500 11px/1 'IBM Plex Mono',monospace;padding:10px 0;border-radius:7px;cursor:pointer;color:#c9d6d8;
+  background:linear-gradient(180deg,#28343a,#1d262b);border:1px solid rgba(255,255,255,.07);box-shadow:0 2px 0 #121719;transition:.14s;
+}
+.fx button:hover{color:var(--acc);border-color:rgba(224,122,63,.5);transform:translateY(-1px)}
+.fx button:active{transform:translateY(2px);box-shadow:none}
+
+/* ---------- TECLADO ---------- */
+.pad{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.k{
+  position:relative;border:0;cursor:pointer;color:#eef3f4;font-family:'Work Sans',sans-serif;font-weight:600;font-size:19px;
+  padding:0;height:clamp(50px,13.5vw,58px);border-radius:11px 11px 13px 13px;
+  background:linear-gradient(180deg,#3d474d 0%,#2c3438 45%,#252c30 100%);
+  box-shadow:0 4px 0 #12171a,0 9px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.14);
+  transition:transform .08s,box-shadow .08s,background .25s,color .25s;
+}
+.k:hover{background:linear-gradient(180deg,#48545b,#2c3438 45%,#252c30)}
+.k:active,.k.hit{transform:translateY(4px);box-shadow:0 0 0 #12171a,0 3px 8px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07)}
+.k.hit::after{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(255,255,255,.22);animation:fade .3s forwards}
+@keyframes fade{to{opacity:0}}
+.k-num{font-size:21px}
+.k-fn{font-size:15px;color:#b9c6ca;background:linear-gradient(180deg,#333c41,#222a2e)}
+.k-op{color:#fff;background:linear-gradient(180deg,#e07a3f,#b8532a);box-shadow:0 4px 0 #7c3618,0 9px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.35);font-size:22px}
+.k-op:active,.k-op.hit{box-shadow:0 0 0 #7c3618,inset 0 1px 0 rgba(255,255,255,.2)}
+.k-op.armed{background:linear-gradient(180deg,#ffd9a8,#e07a3f);color:#5a2410}
+.k-ac{color:#ffd0b8}
+.k-eq{grid-column:span 2;color:#06231d;font-size:24px;background:linear-gradient(180deg,#63d3bd,#2f9f8b);box-shadow:0 4px 0 #1b6154,0 9px 18px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.45)}
+.k-eq:active,.k-eq.hit{box-shadow:0 0 0 #1b6154}
+.k-zero{grid-column:span 2}
+.k-back{color:#ffb2ae}
+
+/* pie del chasis */
+.chassis-foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+.fx-toggle{
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#a9b6ba;cursor:pointer;
+  font:600 10px/1 'Work Sans',sans-serif;letter-spacing:.2em;text-transform:uppercase;padding:9px 14px;border-radius:999px;transition:.25s;
+  display:flex;align-items:center;gap:9px;
+}
+.fx-toggle:hover{color:#fff;border-color:rgba(79,184,165,.6)}
+.fx-toggle[aria-expanded="true"]{background:rgba(79,184,165,.18);color:#8ff0dc;border-color:rgba(79,184,165,.6)}
+.fx-toggle b{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0}
+.led{display:flex;align-items:center;gap:8px;font:500 9px/1 'IBM Plex Mono',monospace;letter-spacing:.2em;color:#6d787c}
+.led i{width:8px;height:8px;border-radius:50%;background:#4fb8a5;box-shadow:0 0 10px #4fb8a5;animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.28}}
+
+/* ---------- CINTA DE PAPEL ---------- */
+.tape-wrap{width:min(300px,92vw);display:flex;flex-direction:column;align-items:center;gap:0}
+.roll{width:104px;height:104px;border-radius:50%;position:relative;margin-bottom:-16px;z-index:3;
+  background:radial-gradient(circle at 34% 30%,#5b6469,#232a2d 62%,#141a1c);
+  box-shadow:0 16px 26px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.08);
+  display:grid;place-items:center;animation:spin 30s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.roll::before{content:'';position:absolute;inset:12px;border-radius:50%;background:repeating-radial-gradient(circle,#e9dfc9 0 2px,#c9bda2 2px 4px)}
+.roll span{position:relative;width:26px;height:26px;border-radius:50%;background:#2a3134;box-shadow:inset 0 2px 5px #000}
+.tape{
+  width:100%;max-width:290px;position:relative;z-index:2;color:var(--paper-ink);
+  background:linear-gradient(180deg,#f3ead7,#e4d8bd);
+  padding:16px 16px 0;box-shadow:0 20px 34px -14px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.7);
+  border-left:1px solid rgba(0,0,0,.12);border-right:1px solid rgba(0,0,0,.12);
+}
+.tape::before{content:'';position:absolute;left:34px;top:0;bottom:0;width:1px;background:rgba(200,60,60,.28)}
+.tape-list{list-style:none;margin:0;padding:0;max-height:330px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;font-size:12.5px;scrollbar-width:thin}
+.tape-list li{display:flex;justify-content:space-between;gap:12px;padding:7px 0 7px 26px;border-bottom:1px dashed rgba(60,50,35,.22);animation:feed .45s cubic-bezier(.2,.9,.2,1)}
+.tape-list li .op{color:#6b6151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tape-list li .res{font-weight:600;color:#20242a;white-space:nowrap}
+.tape-list li:hover{background:rgba(224,122,63,.13);cursor:pointer}
+.tape-list li:first-child .res{color:#a8452a}
+@keyframes feed{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
+.empty{display:block;padding:14px 0 14px 26px;color:rgba(60,50,35,.45);font-style:italic;border:0!important;animation:none!important}
+.tape-bottom{height:11px;background:linear-gradient(180deg,#e4d8bd,#d8cbad);
+  background-image:radial-gradient(circle 6px at 8px 11px,transparent 6px,#ddd0b3 6.5px);background-size:16px 11px;background-repeat:repeat-x}
+.tape-clear{
+  margin-top:16px;background:transparent;border:1px dashed rgba(255,255,255,.22);color:#7d888c;cursor:pointer;
+  font:500 10px/1 'Work Sans',sans-serif;letter-spacing:.2em;text-transform:uppercase;padding:10px 18px;border-radius:999px;transition:.25s;
+}
+.tape-clear:hover{color:#ff9d7a;border-color:#e07a3f;background:rgba(224,122,63,.1)}
+
+/* ---------- NOTAS / ATAJOS ---------- */
+.notes{position:relative;z-index:4;max-width:1000px;margin:0 auto;padding:10px clamp(16px,4vw,40px) 70px}
+.notes h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(26px,4.6vw,42px);letter-spacing:-.02em;margin:0 0 6px;color:#f0f4f4}
+.notes .lead{max-width:56ch;color:#8e9a9e;font-weight:300;font-size:15.5px;line-height:1.65;margin:0 0 30px}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:11px}
+.chip{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border-radius:13px;
+  background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.08);
+  transition:.35s cubic-bezier(.2,.8,.2,1);
+}
+.chip:hover{transform:translateY(-4px);border-color:rgba(224,122,63,.45);box-shadow:0 16px 28px -14px rgba(0,0,0,.8)}
+.chip p{margin:0;font-size:13px;color:#b3bdc1}
+.chip kbd{font:600 12px/1 'IBM Plex Mono',monospace;background:#0e1416;border:1px solid rgba(255,255,255,.14);border-bottom-width:2px;padding:6px 9px;border-radius:6px;color:#e8ecec;white-space:nowrap}
+footer{position:relative;z-index:4;border-top:1px solid rgba(255,255,255,.07);padding:22px clamp(16px,4vw,40px);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#667074}
+.counter{color:var(--acc-2);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0s)}
+.reveal.in{opacity:1;transform:none}
+
+@media (max-width:880px){.stage{flex-direction:column;align-items:center}.tape-wrap{width:min(340px,94vw)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body data-lcd="amber">
+
+<div class="lamp" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">M</div>
+    <div>
+      <h1>MERIDIAN</h1>
+      <p>M-9 · calculadora de escritorio</p>
+    </div>
+  </div>
+  <div class="switches">
+    <button class="sw" id="swAngle" aria-pressed="true">Ángulo <i>DEG</i></button>
+    <button class="sw" id="swLcd">Pantalla <i>ÁMBAR</i></button>
+    <button class="sw" id="swSound" aria-pressed="true">Sonido <i>ON</i></button>
+  </div>
+</header>
+
+<main class="stage">
+
+  <!-- ============ DISPOSITIVO ============ -->
+  <section class="device" id="device" aria-label="Calculadora">
+    <div class="chassis-top">
+      <div class="plate">
+        <span class="model">MERIDIAN</span>
+        <span class="sub">M-9 · 12 dígitos · solar</span>
+      </div>
+      <div class="solar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="screen" id="screen">
+      <div class="status">
+        <span class="ind" id="indMem">M</span>
+        <span class="ind" id="indOp">—</span>
+        <span class="ind" id="indAngle">DEG</span>
+        <span class="ind" id="indFx">FX</span>
+      </div>
+      <div class="expr" id="expr"></div>
+      <div class="readout" id="readout">
+        <span class="ghost" id="ghost">000000000000</span>
+        <span id="value">0</span>
+      </div>
+    </div>
+
+    <div class="mem-strip">
+      <button data-act="mc">MC</button>
+      <button data-act="mr">MR</button>
+      <button data-act="m+">M+</button>
+      <button data-act="m-">M−</button>
+    </div>
+
+    <div class="fx" id="fx">
+      <button data-act="fn" data-fn="sin">sin</button>
+      <button data-act="fn" data-fn="cos">cos</button>
+      <button data-act="fn" data-fn="tan">tan</button>
+      <button data-act="op" data-op="^">xʸ</button>
+      <button data-act="fn" data-fn="ln">ln</button>
+      <button data-act="fn" data-fn="log">log</button>
+      <button data-act="fn" data-fn="fact">n!</button>
+      <button data-act="fn" data-fn="inv">1/x</button>
+      <button data-act="const" data-val="pi">π</button>
+      <button data-act="const" data-val="e">e</button>
+      <button data-act="fn" data-fn="sqrt">√</button>
+      <button data-act="fn" data-fn="sq">x²</button>
+    </div>
+
+    <div class="pad" id="pad">
+      <button class="k k-fn k-ac" data-act="clear">AC</button>
+      <button class="k k-fn" data-act="sign">±</button>
+      <button class="k k-fn" data-act="pct">%</button>
+      <button class="k k-op" data-act="op" data-op="÷">÷</button>
+      <button class="k k-fn k-back" data-act="back">⌫</button>
+
+      <button class="k k-num" data-act="digit" data-val="7">7</button>
+      <button class="k k-num" data-act="digit" data-val="8">8</button>
+      <button class="k k-num" data-act="digit" data-val="9">9</button>
+      <button class="k k-op" data-act="op" data-op="×">×</button>
+      <button class="k k-fn" data-act="fn" data-fn="sqrt">√</button>
+
+      <button class="k k-num" data-act="digit" data-val="4">4</button>
+      <button class="k k-num" data-act="digit" data-val="5">5</button>
+      <button class="k k-num" data-act="digit" data-val="6">6</button>
+      <button class="k k-op" data-act="op" data-op="−">−</button>
+      <button class="k k-fn" data-act="fn" data-fn="sq">x²</button>
+
+      <button class="k k-num" data-act="digit" data-val="1">1</button>
+      <button class="k k-num" data-act="digit" data-val="2">2</button>
+      <button class="k k-num" data-act="digit" data-val="3">3</button>
+      <button class="k k-op" data-act="op" data-op="+">+</button>
+      <button class="k k-fn" data-act="ce">CE</button>
+
+      <button class="k k-num k-zero" data-act="digit" data-val="0">0</button>
+      <button class="k k-num" data-act="dot">.</button>
+      <button class="k k-eq" data-act="equals">=</button>
+    </div>
+
+    <div class="chassis-foot">
+      <button class="fx-toggle" id="fxToggle" aria-expanded="false"><b>f(x)</b> científico</button>
+      <div class="led"><i></i> POWER</div>
+    </div>
+  </section>
+
+  <!-- ============ CINTA ============ -->
+  <aside class="tape-wrap" aria-label="Historial">
+    <div class="roll" aria-hidden="true"><span></span></div>
+    <div class="tape">
+      <ul class="tape-list" id="tape">
+        <li class="empty" style="border:0">— sin registros —</li>
+      </ul>
+      <div class="tape-bottom" aria-hidden="true"></div>
+    </div>
+    <button class="tape-clear" id="tapeClear">Desechar cinta</button>
+  </aside>
+</main>
+
+<!-- ============ NOTAS ============ -->
+<section class="notes">
+  <h2 class="reveal">Se pulsa, se imprime.</h2>
+  <p class="lead reveal" style="--d:.08s">Toda la lógica corre en JavaScript puro: sin librerías, sin dependencias. Puedes manejarla por teclado y cada resultado queda impreso en la cinta, que además es reutilizable — un clic sobre cualquier línea devuelve ese valor a la pantalla.</p>
+  <div class="chips">
+    <div class="chip reveal" style="--d:.10s"><p>Números y punto</p><kbd>0–9</kbd><kbd>.</kbd></div>
+    <div class="chip reveal" style="--d:.14s"><p>Operadores</p><kbd>+ − * /</kbd></div>
+    <div class="chip reveal" style="--d:.18s"><p>Igual</p><kbd>Enter</kbd></div>
+    <div class="chip reveal" style="--d:.22s"><p>Borrar un dígito</p><kbd>Backspace</kbd></div>
+    <div class="chip reveal" style="--d:.26s"><p>Borrado total</p><kbd>Esc</kbd></div>
+    <div class="chip reveal" style="--d:.30s"><p>Porcentaje</p><kbd>%</kbd></div>
+    <div class="chip reveal" style="--d:.34s"><p>Raíz cuadrada</p><kbd>r</kbd></div>
+    <div class="chip reveal" style="--d:.38s"><p>Memoria + / −</p><kbd>M</kbd><kbd>N</kbd></div>
+  </div>
+</section>
+
+<footer>
+  <span>Meridian M-9 · archivo único HTML/CSS/JS</span>
+  <span class="counter" id="counter">0 cálculos registrados</span>
+</footer>
+
+<script>
+/* =========================================================
+   ESTADO
+========================================================= */
+const S = {
+  display:'0', prev:null, op:null, fresh:true,
+  mem:0, angle:'DEG', error:false, count:0, sound:true
+};
+
+const $ = s => document.querySelector(s);
+const valueEl=$('#value'), ghostEl=$('#ghost'), exprEl=$('#expr'),
+      readout=$('#readout'), tape=$('#tape'), counter=$('#counter'),
+      indMem=$('#indMem'), indOp=$('#indOp'), indAngle=$('#indAngle'), indFx=$('#indFx');
+
+/* =========================================================
+   FORMATO
+========================================================= */
+function pretty(str){
+  if(str==='ERROR'||/e/i.test(str)) return str;
+  const neg = str.startsWith('-');
+  let body = neg ? str.slice(1) : str;
+  let [i,d] = body.split('.');
+  i = i.replace(/^0+(?=\d)/,'').replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return (neg?'-':'') + i + (body.includes('.') ? '.'+(d||'') : '');
+}
+function toStr(n){
+  if(!isFinite(n)||Number.isNaN(n)) return 'ERROR';
+  if(n===0) return '0';
+  const a=Math.abs(n);
+  if(a>=1e12||a<1e-9) return n.toExponential(6).replace('e','E');
+  return String(Number(n.toPrecision(12)));
+}
+const cur = () => S.display==='ERROR' ? NaN : parseFloat(S.display.replace(/,/g,''))||0;
+
+/* =========================================================
+   RENDER
+========================================================= */
+function render(pop){
+  const txt = S.error ? 'ERROR' : pretty(S.display);
+  valueEl.textContent = txt;
+  ghostEl.textContent = '8'.repeat(Math.max(txt.length,12));
+  exprEl.textContent = S.op ? `${pretty(toStr(S.prev))} ${S.op}` : (S.lastExpr||'');
+  indMem.classList.toggle('on', S.mem!==0);
+  indOp.classList.toggle('on', !!S.op);
+  indOp.textContent = S.op ? S.op : '—';
+  readout.classList.toggle('err', S.error);
+  document.querySelectorAll('.k-op').forEach(b=>b.classList.toggle('armed', !!S.op && b.dataset.op===S.op));
+  if(pop){ readout.classList.remove('pop'); void readout.offsetWidth; readout.classList.add('pop'); }
+}
+
+/* =========================================================
+   SONIDO
+========================================================= */
+let ac;
+function blip(freq,type='square',dur=.05){
+  if(!S.sound) return;
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime;
+    o.type=type; o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(.11,t+.005);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+.03);
+  }catch(e){}
+}
+
+/* =========================================================
+   CINTA
+========================================================= */
+function print(op,res){
+  const li=document.createElement('li');
+  li.dataset.val = res;
+  li.innerHTML = `<span class="op">${op}</span><span class="res">${pretty(res)}</span>`;
+  li.onclick = ()=>{ S.display=String(li.dataset.val); S.error=false; S.fresh=true; render(true); blip(880,'triangle',.06); };
+  const e=tape.querySelector('.empty'); if(e) e.remove();
+  tape.prepend(li);
+  S.count++; counter.textContent = `${S.count} ${S.count===1?'cálculo registrado':'cálculos registrados'}`;
+}
+$('#tapeClear').onclick = ()=>{
+  tape.innerHTML='<li class="empty" style="border:0">— sin registros —</li>';
+  blip(180,'sawtooth',.12);
+};
+
+/* =========================================================
+   OPERACIONES
+========================================================= */
+function compute(a,b,op){
+  switch(op){
+    case '+': return a+b;
+    case '−': return a-b;
+    case '×': return a*b;
+    case '÷': return b===0 ? NaN : a/b;
+    case '^': return Math.pow(a,b);
+  }
+}
+function fail(){ S.error=true; S.display='0'; S.prev=null; S.op=null; S.fresh=true; blip(120,'sawtooth',.18); render(); }
+
+function setOp(op){
+  if(S.error) return;
+  if(S.op && !S.fresh){
+    const r = compute(S.prev, cur(), S.op);
+    if(!isFinite(r)||Number.isNaN(r)) return fail();
+    S.prev = r; S.display = toStr(r); render(true);
+  } else {
+    S.prev = cur();
+  }
+  S.op = op; S.fresh = true; S.lastExpr = `${pretty(toStr(S.prev))} ${op}`;
+  blip(620,'square',.045); render();
+}
+function equals(){
+  if(S.error||!S.op||S.prev===null) return;
+  const b = cur(), r = compute(S.prev,b,S.op);
+  if(!isFinite(r)||Number.isNaN(r)) return fail();
+  print(`${pretty(toStr(S.prev))} ${S.op} ${pretty(toStr(b))} =`, toStr(r));
+  S.display = toStr(r); S.lastExpr=null; S.prev=null; S.op=null; S.fresh=true;
+  blip(920,'triangle',.09); render(true);
+}
+function fn(name){
+  if(S.error) return;
+  const x = cur(); let r, label;
+  const rad = S.angle==='RAD' ? x : x*Math.PI/180;
+  const map = {
+    sqrt:[x<0?NaN:Math.sqrt(x), `√ (${pretty(toStr(x))}) =`],
+    sq:[x*x, `sqr (${pretty(toStr(x))}) =`],
+    inv:[x===0?NaN:1/x, `1 ÷ (${pretty(toStr(x))}) =`],
+    ln:[x<=0?NaN:Math.log(x), `ln (${pretty(toStr(x))}) =`],
+    log:[x<=0?NaN:Math.log10(x), `log (${pretty(toStr(x))}) =`],
+    sin:[Math.sin(rad), `sin (${pretty(toStr(x))}°) =`],
+    cos:[Math.cos(rad), `cos (${pretty(toStr(x))}°) =`],
+    tan:[Math.cos(rad)===0?NaN:Math.tan(rad), `tan (${pretty(toStr(x))}°) =`],
+    fact:[(()=>{ if(x<0||x>170||!Number.isInteger(x)) return NaN; let f=1; for(let i=2;i<=x;i++) f*=i; return f; })(), `${pretty(toStr(x))}! =`]
+  };
+  if(!map[name]) return;
+  [r,label] = map[name];
+  if(!isFinite(r)||Number.isNaN(r)) return fail();
+  S.display = toStr(r); S.fresh = true;
+  print(label, S.display); blip(700,'triangle',.07); render(true);
+}
+
+/* =========================================================
+   ENTRADA
+========================================================= */
+function digit(d){
+  if(S.error) clearAll();
+  if(S.fresh){ S.display = d; S.fresh=false; }
+  else if(S.display.replace(/[-.]/g,'').length < 12){
+    S.display = S.display==='0' ? d : S.display + d;
+  }
+  S.lastExpr=null; blip(480,'square',.035); render();
+}
+function dot(){
+  if(S.error) clearAll();
+  if(S.fresh){ S.display='0.'; S.fresh=false; }
+  else if(!S.display.includes('.')) S.display+='.';
+  blip(430,'square',.035); render();
+}
+function clearAll(){ S.display='0'; S.prev=null; S.op=null; S.fresh=true; S.error=false; S.lastExpr=null; blip(300,'square',.07); render(); }
+function clearEntry(){ S.display='0'; S.fresh=true; blip(340,'square',.05); render(); }
+function back(){
+  if(S.error) return clearAll();
+  if(S.fresh) return;
+  S.display = S.display.length>1 ? S.display.slice(0,-1) : '0';
+  if(S.display==='-'||S.display==='') S.display='0';
+  if(S.display==='0') S.fresh=true;
+  blip(380,'square',.04); render();
+}
+function sign(){
+  if(S.error||S.display==='0') return;
+  S.display = S.display.startsWith('-') ? S.display.slice(1) : '-'+S.display;
+  blip(540,'square',.05); render();
+}
+function pct(){
+  if(S.error) return;
+  let v = cur();
+  if(S.op && (S.op==='+'||S.op==='−') && S.prev!==null) v = S.prev*v/100; else v = v/100;
+  S.display = toStr(v); S.fresh=false; blip(600,'triangle',.06); render(true);
+}
+function mem(act){
+  if(S.error) return;
+  if(act==='mc') S.mem=0;
+  if(act==='mr'){ S.display=toStr(S.mem); S.fresh=true; }
+  if(act==='m+') S.mem += cur();
+  if(act==='m-') S.mem -= cur();
+  blip(760,'sine',.06); render(true);
+}
+
+/* =========================================================
+   EVENTOS
+========================================================= */
+document.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-act]'); if(!b) return;
+  const {act,val,op,fn:f} = b.dataset;
+  switch(act){
+    case 'digit': digit(val); break;
+    case 'dot': dot(); break;
+    case 'op': setOp(op); break;
+    case 'equals': equals(); break;
+    case 'clear': clearAll(); break;
+    case 'ce': clearEntry(); break;
+    case 'back': back(); break;
+    case 'sign': sign(); break;
+    case 'pct': pct(); break;
+    case 'fn': fn(f); break;
+    case 'const': S.display = val==='pi' ? toStr(Math.PI) : toStr(Math.E); S.fresh=false; blip(660,'triangle',.06); render(true); break;
+    default: mem(act);
+  }
+});
+
+/* teclado físico */
+const KEYS = {
+  '0':'[data-val="0"]','1':'[data-val="1"]','2':'[data-val="2"]','3':'[data-val="3"]','4':'[data-val="4"]',
+  '5':'[data-val="5"]','6':'[data-val="6"]','7':'[data-val="7"]','8':'[data-val="8"]','9':'[data-val="9"]',
+  '.':'[data-act="dot"]','+':'[data-op="+"]','-':'[data-op="−"]','*':'[data-op="×"]','x':'[data-op="×"]',
+  '/':'[data-op="÷"]','Enter':'[data-act="equals"]','=':'[data-act="equals"]','%':'[data-act="pct"]',
+  'Backspace':'[data-act="back"]','Escape':'[data-act="clear"]','r':'[data-fn="sqrt"]','m':'[data-act="m+"]','n':'[data-act="m-"]'
+};
+document.addEventListener('keydown', e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const sel = KEYS[e.key] || KEYS[e.key.toLowerCase()]; if(!sel) return;
+  const btn = document.querySelector(sel); if(!btn) return;
+  e.preventDefault();
+  btn.click();
+  btn.classList.add('hit'); setTimeout(()=>btn.classList.remove('hit'),130);
+});
+
+/* interruptores */
+$('#swAngle').onclick = e=>{
+  S.angle = S.angle==='DEG' ? 'RAD' : 'DEG';
+  e.currentTarget.querySelector('i').textContent = S.angle;
+  e.currentTarget.setAttribute('aria-pressed', S.angle==='DEG');
+  indAngle.textContent = S.angle; indAngle.classList.toggle('on', S.angle==='RAD');
+  blip(500,'triangle',.05);
+};
+$('#swLcd').onclick = e=>{
+  const next = document.body.dataset.lcd==='amber' ? 'green' : 'amber';
+  document.body.dataset.lcd = next;
+  e.currentTarget.querySelector('i').textContent = next==='amber'?'ÁMBAR':'VERDE';
+  blip(560,'sine',.06);
+};
+$('#swSound').onclick = e=>{
+  S.sound=!S.sound;
+  e.currentTarget.setAttribute('aria-pressed', S.sound);
+  e.currentTarget.querySelector('i').textContent = S.sound?'ON':'OFF';
+  blip(640,'triangle',.06);
+};
+$('#fxToggle').onclick = e=>{
+  const open = $('#fx').classList.toggle('open');
+  e.currentTarget.setAttribute('aria-expanded', open);
+  indFx.classList.toggle('on', open);
+  blip(open?820:400,'triangle',.06);
+};
+
+/* inclinación parallax del chasis */
+const device=$('#device');
+if(matchMedia('(hover:hover)').matches && !matchMedia('(prefers-reduced-motion:reduce)').matches){
+  device.addEventListener('pointermove', e=>{
+    const r=device.getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width-.5, py=(e.clientY-r.top)/r.height-.5;
+    device.style.setProperty('--ry',(px*6).toFixed(2)+'deg');
+    device.style.setProperty('--rx',(-py*5).toFixed(2)+'deg');
+    device.style.setProperty('--sx',((1-px)*100).toFixed(0)+'%');
+  });
+  device.addEventListener('pointerleave', ()=>{ device.style.setProperty('--ry','0deg'); device.style.setProperty('--rx','0deg'); });
+}
+
+/* revelado al hacer scroll */
+const io=new IntersectionObserver(en=>en.forEach(x=>x.isIntersecting&&x.target.classList.add('in')),{threshold:.15});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+render();
+</script>
+</body>
+</html>
